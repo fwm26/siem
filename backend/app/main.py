@@ -1,14 +1,15 @@
 import bcrypt
-from fastapi import FastAPI, Depends, HTTPException, status
+from fastapi import FastAPI, Depends, HTTPException, status, Query
+from fastapi.middleware.cors import CORSMiddleware
 from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
 from pydantic import BaseModel
 from datetime import datetime, timedelta
 from jose import JWTError, jwt
-from typing import Optional
+from typing import Optional, List
 from sqlalchemy.orm import Session
 from .database import get_db
-from .models import User
-from .schemas import Token, TokenData, UserOut, UserCreate, LogCreate
+from .models import User, Log as LogModel
+from .schemas import Token, TokenData, UserOut, UserCreate, LogCreate, Log as LogSchema
 from . import crud
 import os
 
@@ -80,6 +81,16 @@ async def login_for_access_token(form_data: OAuth2PasswordRequestForm = Depends(
     )
     return {"access_token": access_token, "token_type": "bearer"}
 
+# Allow all origins (you can limit this to your specific frontend URL if you prefer)
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["http://localhost:5173"],  # Change this to ["http://localhost:3000"] or your frontend's URL if you want more security
+    allow_credentials=True,
+    allow_methods=["GET", "POST", "OPTIONS"],  # Allow all HTTP methods (POST, GET, OPTIONS, etc.)
+    allow_headers=["*"],  # Allow all headers
+)
+
+
 # Protected route
 @app.get("/users/me", response_model=UserOut)
 async def read_users_me(current_user: UserOut = Depends(get_current_user)):
@@ -102,3 +113,22 @@ async def create_log(log: LogCreate, db: Session = Depends(get_db), current_user
     # Only authenticated users can access this
     new_log = crud.create_log(db, log)
     return {"message": "Log created successfully", "log": new_log}
+
+@app.get("/logs", response_model=List[LogSchema])
+async def get_logs(event: str = Query(None), db: Session = Depends(get_db)):
+    """
+    Fetch logs from the database. Optionally filter logs by the 'event' field.
+    
+    :param event: Optional query parameter to filter logs by the event type.
+    :param db: Database session.
+    :return: List of logs, filtered by event if provided.
+    """
+    if event:
+        # If the event query parameter is provided, filter logs by the event
+        logs = db.query(LogModel).filter(LogModel.event.ilike(f"%{event}%")).all()
+    else:
+        # Otherwise, return all logs
+        logs = db.query(LogModel).all()
+
+    # Convert SQLAlchemy LogModel objects to Pydantic LogSchema objects
+    return [LogSchema.from_orm(log) for log in logs]

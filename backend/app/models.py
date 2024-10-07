@@ -1,32 +1,36 @@
-from sqlalchemy import Column, Integer, String, Text, DateTime, Boolean
-from sqlalchemy.sql import func
-from app.database import Base
+from sqlalchemy import Column, Integer, String, DateTime, Text
+from sqlalchemy.ext.declarative import declarative_base
 from datetime import datetime, timezone
 
+
+
+Base = declarative_base()
+
 class Log(Base):
-    __tablename__ = "logs"
+    __tablename__ = 'logs'
 
     id = Column(Integer, primary_key=True, index=True)
-    timestamp = Column(DateTime, default=datetime.utcnow)
-    event = Column(String(255), nullable=False)
-    user = Column(String(255), nullable=True)
-    ip = Column(String(100), nullable=True)
-    site_url = Column(String(255), nullable=True)
-    url = Column(Text, nullable=True)
-    method = Column(String(10), nullable=True)
-    user_agent = Column(Text, nullable=True)
-    referrer = Column(Text, nullable=True)
-    query_string = Column(Text, nullable=True)
-    remote_addr = Column(String(100), nullable=True)
-    request_time = Column(Integer, nullable=True)
-    extra = Column(Text, nullable=True)
+    timestamp = Column(DateTime)
+    event = Column(String(255))
+    user = Column(String(255))
+    ip = Column(String(100))
+    site_url = Column(String(255))
+    url = Column(Text)
+    method = Column(String(10))
+    user_agent = Column(Text)
+    referrer = Column(Text)
+    query_string = Column(Text)
+    remote_addr = Column(String(100))
+    request_time = Column(Integer)
+    extra = Column(Text)
+
 
 class User(Base):
-    __tablename__ = "users"
+    __tablename__ = 'users'
 
     id = Column(Integer, primary_key=True, index=True)
-    username = Column(String, unique=True, index=True)
-    full_name = Column(String)
-    email = Column(String, unique=True, index=True)
-    hashed_password = Column(String)
-    disabled = Column(Boolean, default=False)
+    username = Column(String(255))
+    email = Column(String(255))
+    full_name = Column(String(255))
+    hashed_password = Column(String(255))
+    disabled = Column(String(255))
