@@ -217,7 +217,7 @@ interface Log {
     methods: {
       async fetchUsername() {
         try {
-          const response = await axios.get('http://localhost:8000/users/me', {
+          const response = await axios.get('${import.meta.env.VITE_APP_API_URL}/users/me', {
             headers: {
               Authorization: `Bearer ${localStorage.getItem('token')}`
             }
@@ -228,25 +228,35 @@ interface Log {
           this.$router.push('/login');
         }
       },
-      async fetchLogs() {
-        try {
-          const response = await axios.get('http://localhost:8000/logs', {
-            headers: {
-              Authorization: `Bearer ${localStorage.getItem('token')}`
-            }
-          });
-          this.logs = response.data as Log[]; // Cast the response data to an array of Log objects
-          this.countEvents();
-        } catch (err) {
-          console.error('Error fetching logs:', err);
-        }
+async fetchLogs() {
+  try {
+    const response = await axios.get(`${import.meta.env.VITE_APP_API_URL}/logs`, {
+      headers: {
+        Authorization: `Bearer ${localStorage.getItem('token')}`,
       },
-      countEvents() {
-        this.errorCounts.successfulLogins = this.logs.filter(log => log.event === 'User login').length;
-        this.errorCounts.unsuccessfulLogins = this.logs.filter(log => log.event === 'Unsuccessful login').length;
-        this.errorCounts.passwordResets = this.logs.filter(log => log.event === 'Password reset').length;
-        this.errorCounts.logouts = this.logs.filter(log => log.event === 'Logout').length;
-      },
+    });
+    
+    console.log('API Response:', response.data); // Log the response to see the format
+    
+    this.logs = Array.isArray(response.data) ? response.data as Log[] : [];  // Ensure response.data is an array
+
+    console.log('Logs:', this.logs);  // Log the logs after assigning
+
+    this.countEvents();
+  } catch (err) {
+    console.error('Error fetching logs:', err);
+  }
+},
+countEvents() {
+  if (Array.isArray(this.logs)) {
+    this.errorCounts.successfulLogins = this.logs.filter(log => log.event === 'User login').length;
+    this.errorCounts.unsuccessfulLogins = this.logs.filter(log => log.event === 'Unsuccessful login').length;
+    this.errorCounts.passwordResets = this.logs.filter(log => log.event === 'Password reset').length;
+    this.errorCounts.logouts = this.logs.filter(log => log.event === 'Logout').length;
+  } else {
+    console.error('Logs are not an array:', this.logs);  // Add a fallback in case logs is not an array
+  }
+},
       filterLogsByEvent(event: string) { // Specify that the event is a string
         this.filteredLogs = this.logs.filter(log => log.event === event);
         this.showModal = true; // Show modal when logs are filtered

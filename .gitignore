@@ -11,3 +11,7 @@ venv/
 
 # IDE files
 .vscode/
+
+# Environment Variables
+frontend/.env.development
+frontend/.env.production
