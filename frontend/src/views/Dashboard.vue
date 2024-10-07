@@ -169,33 +169,48 @@
   import Sidebar from '@/components/Sidebar.vue';
   import axios from 'axios';
 
+interface Log {
+  id: number;
+  event: string;
+  user: string;
+  timestamp: string;
+  ip: string;
+  site_url: string;
+  url: string;
+  method: string;
+  user_agent: string;
+  extra: string;
+}
+
   export default defineComponent({
     name: 'Dashboard',
     components: {
       Sidebar // Register Sidebar component
-    },  
+    },
     data() {
       return {
-        username: '', // Placeholder for the username
+        username: '',
         errorCounts: {
           successfulLogins: 0,
           unsuccessfulLogins: 0,
           passwordResets: 0,
-          logouts: 0
+          logouts: 0,
+          serverErrors: 0,
+          clientErrors: 0,
+          redirectErrors: 0,
+          informational: 0        
         },
-        logs: [], // Array to hold logs
-        filteredLogs: [], // Array to hold logs filtered by event type
-        showModal: false, // Control whether the modal is shown
-        searchTerm: '', // Search term for filtering inside the modal
+        logs: [] as Log[], // Explicitly define the type of logs as an array of Log objects
+        filteredLogs: [] as Log[], // Same for filtered logs
+        showModal: false,
+        searchTerm: '',
       };
     },
     mounted() {
-      // Fetch the username and logs when the component is first mounted
       this.fetchUsername();
       this.fetchLogs();
     },
     activated() {
-      // Fetch the username and logs when the component is re-activated from cache
       this.fetchUsername();
       this.fetchLogs();
     },
@@ -204,45 +219,42 @@
         try {
           const response = await axios.get('http://localhost:8000/users/me', {
             headers: {
-              Authorization: `Bearer ${localStorage.getItem('token')}` // Send the token in the Authorization header
+              Authorization: `Bearer ${localStorage.getItem('token')}`
             }
           });
-          this.username = response.data.username; // Set the username from the response
+          this.username = response.data.username;
         } catch (err) {
           console.error('Error fetching username:', err);
-          this.$router.push('/login'); // Redirect to login if unauthorized
+          this.$router.push('/login');
         }
       },
       async fetchLogs() {
         try {
           const response = await axios.get('http://localhost:8000/logs', {
             headers: {
-              Authorization: `Bearer ${localStorage.getItem('token')}` // Send the token in the Authorization header
+              Authorization: `Bearer ${localStorage.getItem('token')}`
             }
           });
-          this.logs = response.data; // Store logs in the logs array
-          this.countEvents(); // Count specific log events
+          this.logs = response.data as Log[]; // Cast the response data to an array of Log objects
+          this.countEvents();
         } catch (err) {
           console.error('Error fetching logs:', err);
         }
       },
       countEvents() {
-        // Count occurrences of specific events like "User login", "Password reset", etc.
         this.errorCounts.successfulLogins = this.logs.filter(log => log.event === 'User login').length;
         this.errorCounts.unsuccessfulLogins = this.logs.filter(log => log.event === 'Unsuccessful login').length;
         this.errorCounts.passwordResets = this.logs.filter(log => log.event === 'Password reset').length;
         this.errorCounts.logouts = this.logs.filter(log => log.event === 'Logout').length;
       },
-      filterLogsByEvent(event) {
-        // Filter logs by the event type
+      filterLogsByEvent(event: string) { // Specify that the event is a string
         this.filteredLogs = this.logs.filter(log => log.event === event);
         this.showModal = true; // Show modal when logs are filtered
       },
       closeModal() {
         this.showModal = false; // Hide the modal
       },
-      viewLogDetails(log) {
-        // Handle viewing more details about a specific log
+      viewLogDetails(log: Log) {
         console.log('Log details:', log);
       },
       logout() {
@@ -256,7 +268,6 @@
     },
     computed: {
       filteredLogsTable() {
-        // Filter logs based on search term in the modal
         return this.filteredLogs.filter(log =>
           log.event.toLowerCase().includes(this.searchTerm.toLowerCase()) ||
           (log.user && log.user.toLowerCase().includes(this.searchTerm.toLowerCase())) ||
